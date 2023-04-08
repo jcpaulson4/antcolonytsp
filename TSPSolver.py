@@ -178,4 +178,19 @@ class TSPSolver:
 	'''
 
 	def fancy(self, time_allowance=60.0) -> dict:
+		results: dict = {}
+		cities: list[City] = self._scenario.getCities()
 		...
+		start_time: float = time.time()
+		
+		...
+
+		bssf: Optional[TSPSolution] = None  # Change this
+
+		end_time: float = time.time()
+		results['cost']: float = bssf.cost
+		results['time']: float = end_time - start_time
+		results['count']: int = 1
+		results['soln']: Optional[TSPSolution] = bssf
+		results['max'], results['total'], results['pruned'] = None, None, None
+		return results
