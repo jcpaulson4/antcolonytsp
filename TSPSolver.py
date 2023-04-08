@@ -178,4 +178,4 @@ class TSPSolver:
 	'''
 
 	def fancy(self, time_allowance=60.0) -> dict:
-		pass
+		...
