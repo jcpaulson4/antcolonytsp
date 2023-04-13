@@ -73,25 +73,37 @@ class TSPSolver:
 		results: dict = {}
 		cities: list[City] = self._scenario.getCities()
 		city_count: int = len(cities)
-		route: list[City] = [cities[0]]
+		route: list[City] = []
+		try_index: int = 0
 		start_time: float = time.time()
 
-		while len(route) < city_count and time.time() - start_time < time_allowance:
-			city: City = route[-1]
-			best_neighbor: Optional[City] = None
-			best_cost: float = math.inf
-			neighbor: City
-			for neighbor in cities:
-				if neighbor in route:
-					continue
-				neighbor_cost: float = city.costTo(neighbor)
-				if neighbor_cost < best_cost:
-					best_neighbor = neighbor
-					best_cost = neighbor_cost
-			if best_neighbor is None:
-				# No possible neighbors; return None
-				break
-			route.append(best_neighbor)
+		try_again = True
+
+		while try_again and time.time() - start_time < time_allowance:
+			try_again = False
+			route = [cities[try_index]]
+
+			while len(route) < city_count and time.time() - start_time < time_allowance:
+				city: City = route[-1]
+				best_neighbor: Optional[City] = None
+				best_cost: float = math.inf
+				neighbor: City
+				for neighbor in cities:
+					if neighbor in route:
+						continue
+					neighbor_cost: float = city.costTo(neighbor)
+					if neighbor_cost < best_cost:
+						best_neighbor = neighbor
+						best_cost = neighbor_cost
+				if best_neighbor is None:
+					try_again = True
+					try_index += 1
+					break
+				route.append(best_neighbor)
+
+			if route[-1].costTo(route[0]) == math.inf:
+				try_again = True
+				try_index += 1
 
 		found: bool = len(route) == city_count
 		bssf: Optional[TSPSolution] = TSPSolution(route) if found else None
@@ -178,14 +190,70 @@ class TSPSolver:
 	'''
 
 	def fancy(self, time_allowance=60.0) -> dict:
+		# TODO: change this
+		return self.two_opt(time_allowance)
+
+
+		# results: dict = {}
+		# cities: list[City] = self._scenario.getCities()
+		# ...
+		# start_time: float = time.time()
+		#
+		# ...
+		#
+		# bssf: Optional[TSPSolution] = None  # change this
+		#
+		# end_time: float = time.time()
+		# results['cost']: float = bssf.cost
+		# results['time']: float = end_time - start_time
+		# results['count']: int = 1
+		# results['soln']: Optional[TSPSolution] = bssf
+		# results['max'], results['total'], results['pruned'] = None, None, None
+		# return results
+
+	def two_opt(self, time_allowance=60.0):
 		results: dict = {}
 		cities: list[City] = self._scenario.getCities()
-		...
+		city_count: int = len(cities)
+		num_solutions: int = 1
 		start_time: float = time.time()
-		
+
+		bssf: TSPSolution = self.greedy(time_allowance)['soln']
+
+		looping = True
+		while time.time() - start_time < time_allowance and looping:
+			looping = False
+			for i in range(0, city_count - 1):
+				for j in range(i + 2, city_count):
+					new_route: list[City] = bssf.route[:i+1] + list(reversed(bssf.route[i+1:j+1])) + bssf.route[j+1:]
+					new_soln: TSPSolution = TSPSolution(new_route)
+					if new_soln.cost < bssf.cost:
+						bssf = new_soln
+						num_solutions += 1
+						looping = True
+					if looping:
+						break
+				if looping:
+					break
+
+		end_time: float = time.time()
+		results['cost']: float = bssf.cost
+		results['time']: float = end_time - start_time
+		results['count']: int = num_solutions
+		results['soln']: Optional[TSPSolution] = bssf
+		results['max'], results['total'], results['pruned'] = None, None, None
+		return results
+
+	def joseph_ant(self, time_allowance=60.0):
+		results: dict = {}
+		cities: list[City] = self._scenario.getCities()
+		alpha: float = 1.0
+		beta: float = 2.0
+		start_time: float = time.time()
+
 		...
 
-		bssf: Optional[TSPSolution] = None  # Change this
+		bssf: Optional[TSPSolution] = None  # change this
 
 		end_time: float = time.time()
 		results['cost']: float = bssf.cost
