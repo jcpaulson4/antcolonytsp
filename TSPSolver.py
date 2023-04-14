@@ -189,29 +189,6 @@ class TSPSolver:
 		</returns>
 	'''
 
-	def fancy(self, time_allowance=60.0) -> dict:
-		return self.defaultRandomTour(time_allowance)
-		# TODO: change this
-		return self.two_opt(time_allowance)
-
-
-		# results: dict = {}
-		# cities: list[City] = self._scenario.getCities()
-		# ...
-		# start_time: float = time.time()
-		#
-		# ...
-		#
-		# bssf: Optional[TSPSolution] = None  # change this
-		#
-		# end_time: float = time.time()
-		# results['cost']: float = bssf.cost
-		# results['time']: float = end_time - start_time
-		# results['count']: int = 1
-		# results['soln']: Optional[TSPSolution] = bssf
-		# results['max'], results['total'], results['pruned'] = None, None, None
-		# return results
-
 	def two_opt(self, time_allowance=60.0):
 		results: dict = {}
 		cities: list[City] = self._scenario.getCities()
