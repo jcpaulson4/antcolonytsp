@@ -220,22 +220,9 @@ class TSPSolver:
 		start_time: float = time.time()
 
 		bssf: TSPSolution = self.greedy(time_allowance)['soln']
-
-		looping = True
-		while time.time() - start_time < time_allowance and looping:
-			looping = False
-			for i in range(0, city_count - 1):
-				for j in range(i + 2, city_count):
-					new_route: list[City] = bssf.route[:i+1] + list(reversed(bssf.route[i+1:j+1])) + bssf.route[j+1:]
-					new_soln: TSPSolution = TSPSolution(new_route)
-					if new_soln.cost < bssf.cost:
-						bssf = new_soln
-						num_solutions += 1
-						looping = True
-					if looping:
-						break
-				if looping:
-					break
+		added_solutions: int
+		bssf, added_solutions = do_two_opt(bssf, city_count, time_allowance)
+		num_solutions += added_solutions
 
 		end_time: float = time.time()
 		results['cost']: float = bssf.cost
@@ -253,46 +240,20 @@ class TSPSolver:
 		start_time: float = time.time()
 
 		bssf: TSPSolution = self.greedy(time_allowance)['soln']
-
-		looping = True
-		while time.time() - start_time < time_allowance and looping:
-			looping = False
-			for i in range(0, city_count - 1):
-				for j in range(i + 2, city_count):
-					new_route: list[City]
-					new_route = bssf.route[:i + 1] + list(reversed(bssf.route[i + 1:j + 1])) + bssf.route[j + 1:]
-					new_soln: TSPSolution = TSPSolution(new_route)
-					if new_soln.cost < bssf.cost:
-						bssf = new_soln
-						num_solutions += 1
-						looping = True
-					if looping:
-						break
-				if looping:
-					break
+		added_solutions: int
+		bssf, added_solutions = do_two_opt(bssf, city_count, time_allowance)
+		num_solutions += added_solutions
 
 		while time.time() - start_time < time_allowance:
 			random_bssf: TSPSolution = self.defaultRandomTour(time_allowance - (time.time() - start_time))['soln']
 
-			looping = True
-			while time.time() - start_time < time_allowance and looping:
-				looping = False
-				for i in range(0, city_count - 1):
-					for j in range(i + 2, city_count):
-						new_route: list[City] = random_bssf.route[:i + 1] + list(reversed(random_bssf.route[i + 1:j + 1]))
-						new_route += random_bssf.route[j + 1:]
-						new_soln: TSPSolution = TSPSolution(new_route)
-						if new_soln.cost < random_bssf.cost:
-							random_bssf = new_soln
-							looping = True
-						if looping:
-							break
-					if looping:
-						break
-			if random_bssf.cost < bssf.cost:
-				bssf = random_bssf
-				num_solutions += 1
+			modified_random_bssf: TSPSolution
+			remaining_time: float = time_allowance - (time.time() - start_time)
+			modified_random_bssf, _ = do_two_opt(random_bssf, city_count, remaining_time)
 
+			if modified_random_bssf.cost < bssf.cost:
+				bssf = modified_random_bssf
+				num_solutions += 1
 
 		end_time: float = time.time()
 		results['cost']: float = bssf.cost
@@ -301,3 +262,29 @@ class TSPSolver:
 		results['soln']: Optional[TSPSolution] = bssf
 		results['max'], results['total'], results['pruned'] = None, None, None
 		return results
+
+
+def do_two_opt(initial_soln: TSPSolution, city_count: int, time_allowance: float):
+	start_time: float = time.time()
+	added_solutions: int = 0
+
+	looping = True
+	while time.time() - start_time < time_allowance and looping:
+		looping = False
+		for i in range(0, city_count - 1):
+			for j in range(i + 2, city_count):
+				new_route: list[City]
+				new_route = initial_soln.route[:i + 1]								\
+							+ list(reversed(initial_soln.route[i + 1:j + 1]))		\
+							+ initial_soln.route[j + 1:]
+				new_soln: TSPSolution = TSPSolution(new_route)
+				if new_soln.cost < initial_soln.cost:
+					initial_soln = new_soln
+					added_solutions += 1
+					looping = True
+				if looping:
+					break
+			if looping:
+				break
+
+	return initial_soln, added_solutions
