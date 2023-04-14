@@ -190,6 +190,7 @@ class TSPSolver:
 	'''
 
 	def fancy(self, time_allowance=60.0) -> dict:
+		return self.defaultRandomTour(time_allowance)
 		# TODO: change this
 		return self.two_opt(time_allowance)
 
@@ -244,21 +245,59 @@ class TSPSolver:
 		results['max'], results['total'], results['pruned'] = None, None, None
 		return results
 
-	def joseph_ant(self, time_allowance=60.0):
+	def two_opt_mod(self, time_allowance=60.0):
 		results: dict = {}
 		cities: list[City] = self._scenario.getCities()
-		alpha: float = 1.0
-		beta: float = 2.0
+		city_count: int = len(cities)
+		num_solutions: int = 1
 		start_time: float = time.time()
 
-		...
+		bssf: TSPSolution = self.greedy(time_allowance)['soln']
 
-		bssf: Optional[TSPSolution] = None  # change this
+		looping = True
+		while time.time() - start_time < time_allowance and looping:
+			looping = False
+			for i in range(0, city_count - 1):
+				for j in range(i + 2, city_count):
+					new_route: list[City]
+					new_route = bssf.route[:i + 1] + list(reversed(bssf.route[i + 1:j + 1])) + bssf.route[j + 1:]
+					new_soln: TSPSolution = TSPSolution(new_route)
+					if new_soln.cost < bssf.cost:
+						bssf = new_soln
+						num_solutions += 1
+						looping = True
+					if looping:
+						break
+				if looping:
+					break
+
+		while time.time() - start_time < time_allowance:
+			random_bssf: TSPSolution = self.defaultRandomTour(time_allowance - (time.time() - start_time))['soln']
+
+			looping = True
+			while time.time() - start_time < time_allowance and looping:
+				looping = False
+				for i in range(0, city_count - 1):
+					for j in range(i + 2, city_count):
+						new_route: list[City] = random_bssf.route[:i + 1] + list(reversed(random_bssf.route[i + 1:j + 1]))
+						new_route += random_bssf.route[j + 1:]
+						new_soln: TSPSolution = TSPSolution(new_route)
+						if new_soln.cost < random_bssf.cost:
+							random_bssf = new_soln
+							looping = True
+						if looping:
+							break
+					if looping:
+						break
+			if random_bssf.cost < bssf.cost:
+				bssf = random_bssf
+				num_solutions += 1
+
 
 		end_time: float = time.time()
 		results['cost']: float = bssf.cost
 		results['time']: float = end_time - start_time
-		results['count']: int = 1
+		results['count']: int = num_solutions
 		results['soln']: Optional[TSPSolution] = bssf
 		results['max'], results['total'], results['pruned'] = None, None, None
 		return results

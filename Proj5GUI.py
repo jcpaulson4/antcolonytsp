@@ -328,11 +328,12 @@ class Proj5GUI( QMainWindow ):
 
 		return '' if retval==None else retval
 
-	ALGORITHMS = [ \
-		('Default                            ','defaultRandomTour'), \
-		('Greedy','greedy'), \
-		('Branch and Bound','branchAndBound'), \
-		('Fancy','fancy') \
+	ALGORITHMS = [
+		('Default                            ', 'defaultRandomTour'),
+		('Greedy', 'greedy'),
+		('Branch and Bound', 'branchAndBound'),
+		('2-opt', 'two_opt'),
+		('Modified 2-opt', 'two_opt_mod')
 	]															# whitespace hack to get longest to display correctly
 
 	def initUI( self ):
