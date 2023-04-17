@@ -2,18 +2,18 @@
 
 from TSPClasses import *
 import time
+import random
 
 
 class TSPSolver:
-	def __init__(self, gui_view):
-		self._scenario = None
-		self.view = gui_view
+    def __init__(self, gui_view):
+        self._scenario = None
+        self.view = gui_view
 
-	def setupWithScenario(self, scenario):
-		self._scenario = scenario
+    def setupWithScenario(self, scenario):
+        self._scenario = scenario
 
-
-	''' <summary>
+    ''' <summary>
 		This is the entry point for the default solver
 		which just finds a valid random tour.  Note this could be used to find your
 		initial BSSF.
@@ -26,36 +26,35 @@ class TSPSolver:
 		</returns>
 	'''
 
-	def defaultRandomTour(self, time_allowance=60.0):
-		results = {}
-		cities = self._scenario.getCities()
-		city_count = len(cities)
-		foundTour = False
-		count = 0
-		bssf = None
-		start_time = time.time()
-		while not foundTour and time.time() - start_time < time_allowance:
-			# create a random permutation
-			perm = np.random.permutation(city_count)
-			route = []
-			# Now build the route using the random permutation
-			for i in range(city_count):
-				route.append(cities[perm[i]])
-			bssf = TSPSolution(route)
-			count += 1
-			if bssf.cost < np.inf:
-				# Found a valid route
-				foundTour = True
-		end_time = time.time()
-		results['cost'] = bssf.cost if foundTour else math.inf
-		results['time'] = end_time - start_time
-		results['count'] = count
-		results['soln'] = bssf
-		results['max'], results['total'], results['pruned'] = None, None, None
-		return results
+    def defaultRandomTour(self, time_allowance=60.0):
+        results = {}
+        cities = self._scenario.getCities()
+        city_count = len(cities)
+        foundTour = False
+        count = 0
+        bssf = None
+        start_time = time.time()
+        while not foundTour and time.time() - start_time < time_allowance:
+            # create a random permutation
+            perm = np.random.permutation(city_count)
+            route = []
+            # Now build the route using the random permutation
+            for i in range(city_count):
+                route.append(cities[perm[i]])
+            bssf = TSPSolution(route)
+            count += 1
+            if bssf.cost < np.inf:
+                # Found a valid route
+                foundTour = True
+        end_time = time.time()
+        results['cost'] = bssf.cost if foundTour else math.inf
+        results['time'] = end_time - start_time
+        results['count'] = count
+        results['soln'] = bssf
+        results['max'], results['total'], results['pruned'] = None, None, None
+        return results
 
-
-	''' <summary>
+    ''' <summary>
 		This is the entry point for the greedy solver, which you must implement for
 		the group project (but it is probably a good idea to just do it for the branch-and
 		bound project as a way to get your feet wet).  Note this could be used to find your
@@ -69,54 +68,66 @@ class TSPSolver:
 		</returns>
 	'''
 
-	def greedy(self, time_allowance: float = 60.0) -> dict:
-		results: dict = {}
-		cities: list[City] = self._scenario.getCities()
-		city_count: int = len(cities)
-		route: list[City] = []
-		try_index: int = 0
-		start_time: float = time.time()
+    def greedy(self, time_allowance: float = 60.0) -> dict:
+        results: dict = {}
+        cities: list[City] = self._scenario.getCities()
+        city_count: int = len(cities)
+        route: list[City] = []
+        try_index: int = random.randint(0, (len(cities) - 1))
+        cities_started_from = set()
+        cities_started_from.add(try_index)
+        start_time: float = time.time()
 
-		try_again = True
+        try_again = True
 
-		while try_again and time.time() - start_time < time_allowance:
-			try_again = False
-			route = [cities[try_index]]
+        while try_again and time.time() - start_time < time_allowance:
+            try_again = False
+            route = [cities[try_index]]
 
-			while len(route) < city_count and time.time() - start_time < time_allowance:
-				city: City = route[-1]
-				best_neighbor: Optional[City] = None
-				best_cost: float = math.inf
-				neighbor: City
-				for neighbor in cities:
-					if neighbor in route:
-						continue
-					neighbor_cost: float = city.costTo(neighbor)
-					if neighbor_cost < best_cost:
-						best_neighbor = neighbor
-						best_cost = neighbor_cost
-				if best_neighbor is None:
-					try_again = True
-					try_index += 1
-					break
-				route.append(best_neighbor)
+            while len(route) < city_count and time.time() - start_time < time_allowance:
+                city: City = route[-1]
+                best_neighbor: Optional[City] = None
+                best_cost: float = math.inf
+                neighbor: City
+                for neighbor in cities:
+                    if neighbor in route:
+                        continue
+                    neighbor_cost: float = city.costTo(neighbor)
+                    if neighbor_cost < best_cost:
+                        best_neighbor = neighbor
+                        best_cost = neighbor_cost
+                if best_neighbor is None:
+                    try_again = True
+                    try_index = random.randint(0, (len(cities) - 1))
+                    if try_index in cities_started_from:
+                        while True:
+                            try_index = random.randint(0, (len(cities) - 1))
+                            if try_index not in cities_started_from:
+                                break
+                    break
+                route.append(best_neighbor)
 
-			if route[-1].costTo(route[0]) == math.inf:
-				try_again = True
-				try_index += 1
+            if route[-1].costTo(route[0]) == math.inf:
+                try_again = True
+                try_index = random.randint(0, (len(cities) - 1))
+                if try_index in cities_started_from:
+                    while True:
+                        try_index = random.randint(0, (len(cities) - 1))
+                        if try_index not in cities_started_from:
+                            break
 
-		found: bool = len(route) == city_count
-		bssf: Optional[TSPSolution] = TSPSolution(route) if found else None
+        found: bool = len(route) == city_count
+        bssf: Optional[TSPSolution] = TSPSolution(route) if found else None
 
-		end_time: float = time.time()
-		results['cost']: float = bssf.cost if found else math.inf
-		results['time']: float = end_time - start_time
-		results['count']: int = 1 if found else 0
-		results['soln']: Optional[TSPSolution] = bssf
-		results['max'], results['total'], results['pruned'] = None, None, None
-		return results
+        end_time: float = time.time()
+        results['cost']: float = bssf.cost if found else math.inf
+        results['time']: float = end_time - start_time
+        results['count']: int = 1 if found else 0
+        results['soln']: Optional[TSPSolution] = bssf
+        results['max'], results['total'], results['pruned'] = None, None, None
+        return results
 
-	''' <summary>
+    ''' <summary>
 		This is the entry point for the branch-and-bound algorithm that you will implement
 		</summary>
 		<returns>
@@ -127,58 +138,59 @@ class TSPSolver:
 		</returns>
 	'''
 
-	def branchAndBound(self, time_allowance=60.0) -> dict:
-		results: dict = {}
-		cities: list[City] = self._scenario.getCities()
-		bssf_change_count: int = 0
-		max_queue_size: int = 1
-		states_created: int = 1
-		pruned_states: int = 0
-		start_time: float = time.time()
+    def branchAndBound(self, time_allowance=60.0) -> dict:
+        results: dict = {}
+        cities: list[City] = self._scenario.getCities()
+        bssf_change_count: int = 0
+        max_queue_size: int = 1
+        states_created: int = 1
+        pruned_states: int = 0
+        start_time: float = time.time()
 
-		greedy_soln: dict = self.greedy(time_allowance)
-		bssf: Optional[TSPSolution] = greedy_soln['soln']
-		if bssf is None:
-			default_random_soln: dict = self.defaultRandomTour(time_allowance - (time.time() - start_time))
-			bssf = default_random_soln['soln']
+        greedy_soln: dict = self.greedy(time_allowance)
+        bssf: Optional[TSPSolution] = greedy_soln['soln']
+        if bssf is None:
+            default_random_soln: dict = self.defaultRandomTour(
+                time_allowance - (time.time() - start_time))
+            bssf = default_random_soln['soln']
 
-		problem: Subproblem = Subproblem(cities=cities)
-		pq: PriorityQueue = PriorityQueue()
-		pq.push(problem)
+        problem: Subproblem = Subproblem(cities=cities)
+        pq: PriorityQueue = PriorityQueue()
+        pq.push(problem)
 
-		while not pq.is_empty() and time.time() - start_time < time_allowance:
-			problem: Subproblem = pq.pop()
-			max_queue_size = max(max_queue_size, len(pq))
+        while not pq.is_empty() and time.time() - start_time < time_allowance:
+            problem: Subproblem = pq.pop()
+            max_queue_size = max(max_queue_size, len(pq))
 
-			if problem.lower_bound >= bssf.cost:
-				# Keep dequeueing because priority is different from lower_bound
-				continue
+            if problem.lower_bound >= bssf.cost:
+                # Keep dequeueing because priority is different from lower_bound
+                continue
 
-			subproblems: list[Subproblem]
-			num_pruned: int
-			subproblems, num_pruned = problem.expand(bssf.cost)
-			pruned_states += num_pruned
-			states_created += num_pruned + len(subproblems)
-			subproblem: Subproblem
-			for subproblem in subproblems:
-				if subproblem.is_finished():
-					if subproblem.lower_bound < bssf.cost:
-						bssf = subproblem.solution(cities)
-						bssf_change_count += 1
-				else:
-					pq.push(subproblem)
+            subproblems: list[Subproblem]
+            num_pruned: int
+            subproblems, num_pruned = problem.expand(bssf.cost)
+            pruned_states += num_pruned
+            states_created += num_pruned + len(subproblems)
+            subproblem: Subproblem
+            for subproblem in subproblems:
+                if subproblem.is_finished():
+                    if subproblem.lower_bound < bssf.cost:
+                        bssf = subproblem.solution(cities)
+                        bssf_change_count += 1
+                else:
+                    pq.push(subproblem)
 
-		end_time: float = time.time()
-		results['cost']: float = bssf.cost
-		results['time']: float = end_time - start_time
-		results['count']: int = bssf_change_count
-		results['soln']: Optional[TSPSolution] = bssf
-		results['max']: int = max_queue_size
-		results['total']: int = states_created
-		results['pruned']: int = pruned_states + len(pq) + 1
-		return results
+        end_time: float = time.time()
+        results['cost']: float = bssf.cost
+        results['time']: float = end_time - start_time
+        results['count']: int = bssf_change_count
+        results['soln']: Optional[TSPSolution] = bssf
+        results['max']: int = max_queue_size
+        results['total']: int = states_created
+        results['pruned']: int = pruned_states + len(pq) + 1
+        return results
 
-	''' <summary>
+    ''' <summary>
 		This is the entry point for the algorithm you'll write for your group project.
 		</summary>
 		<returns>
@@ -189,79 +201,81 @@ class TSPSolver:
 		</returns>
 	'''
 
-	def two_opt(self, time_allowance=60.0):
-		results: dict = {}
-		cities: list[City] = self._scenario.getCities()
-		city_count: int = len(cities)
-		num_solutions: int = 1
-		start_time: float = time.time()
+    def two_opt(self, time_allowance=60.0):
+        results: dict = {}
+        cities: list[City] = self._scenario.getCities()
+        city_count: int = len(cities)
+        num_solutions: int = 1
+        start_time: float = time.time()
 
-		bssf: TSPSolution = self.greedy(time_allowance)['soln']
-		added_solutions: int
-		bssf, added_solutions = do_two_opt(bssf, city_count, time_allowance)
-		num_solutions += added_solutions
+        bssf: TSPSolution = self.greedy(time_allowance)['soln']
+        added_solutions: int
+        bssf, added_solutions = do_two_opt(bssf, city_count, time_allowance)
+        num_solutions += added_solutions
 
-		end_time: float = time.time()
-		results['cost']: float = bssf.cost
-		results['time']: float = end_time - start_time
-		results['count']: int = num_solutions
-		results['soln']: Optional[TSPSolution] = bssf
-		results['max'], results['total'], results['pruned'] = None, None, None
-		return results
+        end_time: float = time.time()
+        results['cost']: float = bssf.cost
+        results['time']: float = end_time - start_time
+        results['count']: int = num_solutions
+        results['soln']: Optional[TSPSolution] = bssf
+        results['max'], results['total'], results['pruned'] = None, None, None
+        return results
 
-	def two_opt_mod(self, time_allowance=60.0):
-		results: dict = {}
-		cities: list[City] = self._scenario.getCities()
-		city_count: int = len(cities)
-		num_solutions: int = 1
-		start_time: float = time.time()
+    def two_opt_mod(self, time_allowance=60.0):
+        results: dict = {}
+        cities: list[City] = self._scenario.getCities()
+        city_count: int = len(cities)
+        num_solutions: int = 1
+        start_time: float = time.time()
 
-		bssf: TSPSolution = self.greedy(time_allowance)['soln']
-		added_solutions: int
-		bssf, added_solutions = do_two_opt(bssf, city_count, time_allowance)
-		num_solutions += added_solutions
+        bssf: TSPSolution = self.greedy(time_allowance)['soln']
+        added_solutions: int
+        bssf, added_solutions = do_two_opt(bssf, city_count, time_allowance)
+        num_solutions += added_solutions
 
-		while time.time() - start_time < time_allowance:
-			random_bssf: TSPSolution = self.defaultRandomTour(time_allowance - (time.time() - start_time))['soln']
+        while time.time() - start_time < time_allowance:
+            random_bssf: TSPSolution = self.defaultRandomTour(
+                time_allowance - (time.time() - start_time))['soln']
 
-			modified_random_bssf: TSPSolution
-			remaining_time: float = time_allowance - (time.time() - start_time)
-			modified_random_bssf, _ = do_two_opt(random_bssf, city_count, remaining_time)
+            modified_random_bssf: TSPSolution
+            remaining_time: float = time_allowance - (time.time() - start_time)
+            modified_random_bssf, _ = do_two_opt(
+                random_bssf, city_count, remaining_time)
 
-			if modified_random_bssf.cost < bssf.cost:
-				bssf = modified_random_bssf
-				num_solutions += 1
+            if modified_random_bssf.cost < bssf.cost:
+                bssf = modified_random_bssf
+                num_solutions += 1
 
-		end_time: float = time.time()
-		results['cost']: float = bssf.cost
-		results['time']: float = end_time - start_time
-		results['count']: int = num_solutions
-		results['soln']: Optional[TSPSolution] = bssf
-		results['max'], results['total'], results['pruned'] = None, None, None
-		return results
+        end_time: float = time.time()
+        results['cost']: float = bssf.cost
+        results['time']: float = end_time - start_time
+        results['count']: int = num_solutions
+        results['soln']: Optional[TSPSolution] = bssf
+        results['max'], results['total'], results['pruned'] = None, None, None
+        return results
 
 
 def do_two_opt(initial_soln: TSPSolution, city_count: int, time_allowance: float):
-	start_time: float = time.time()
-	added_solutions: int = 0
+    start_time: float = time.time()
+    added_solutions: int = 0
 
-	looping = True
-	while time.time() - start_time < time_allowance and looping:
-		looping = False
-		for i in range(0, city_count - 1):
-			for j in range(i + 2, city_count):
-				new_route: list[City]
-				new_route = initial_soln.route[:i + 1]								\
-							+ list(reversed(initial_soln.route[i + 1:j + 1]))		\
-							+ initial_soln.route[j + 1:]
-				new_soln: TSPSolution = TSPSolution(new_route)
-				if new_soln.cost < initial_soln.cost:
-					initial_soln = new_soln
-					added_solutions += 1
-					looping = True
-				if looping:
-					break
-			if looping:
-				break
+    looping = True
+    while time.time() - start_time < time_allowance and looping:
+        looping = False
+        for i in range(0, city_count - 1):
+            for j in range(i + 2, city_count):
+                new_route: list[City]
+                new_route = initial_soln.route[:i + 1]								\
+                    + list(reversed(initial_soln.route[i + 1:j + 1]))		\
+                    + initial_soln.route[j + 1:]
+                new_soln: TSPSolution = TSPSolution(new_route)
+                if new_soln.cost < initial_soln.cost:
+                    initial_soln = new_soln
+                    added_solutions += 1
+                    looping = True
+                if looping:
+                    break
+            if looping:
+                break
 
-	return initial_soln, added_solutions
+    return initial_soln, added_solutions
